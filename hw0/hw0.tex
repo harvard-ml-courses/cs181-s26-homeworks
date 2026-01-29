@@ -83,7 +83,170 @@ In this class, we will be exploring the question of ``how do we model the trend 
 
 
 \begin{solution}
-	Your solution here.
+
+1. Given two data points $D=\{(x_1,y_1),(x_2,y_2)\}$ and a line \(y = w_0 + w_1 x,\) the coefficients $(w_0,w_1)$ must satisfy the system
+\[
+\begin{cases}
+y_1 = w_0 + w_1 x_1,\\
+y_2 = w_0 + w_1 x_2.
+\end{cases}
+\]
+Subtract the first equation from the second: \(y_2 - y_1 = w_1(x_2 - x_1).\) If $x_1 \neq x_2$, then
+\[
+w_1 = \frac{y_2-y_1}{x_2-x_1}.
+\]
+Substitute back into $y_1 = w_0 + w_1 x_1$:
+\[
+w_0 = y_1 - w_1 x_1
+     = y_1 - x_1\frac{y_2-y_1}{x_2-x_1}.
+\]
+Equivalently, we can also compute for \(w_0 = y_2 - x_2\frac{y_2-y_1}{x_2-x_1}.\) 
+\\
+\\
+2. From
+\[
+\begin{cases}
+y_1 = w_0 + w_1 x_1,\\
+y_2 = w_0 + w_1 x_2,
+\end{cases}
+\]
+we can rewrite each equation as an inner product:
+\[
+y_n = \begin{bmatrix}1 & x_n\end{bmatrix}
+\begin{bmatrix}w_0\\ w_1\end{bmatrix},
+\qquad n=1,2.
+\]
+Stacking the two equations gives
+\[
+\begin{bmatrix}y_1\\ y_2\end{bmatrix} = 
+\begin{bmatrix}
+1 & x_1\\
+1 & x_2
+\end{bmatrix}
+\begin{bmatrix}w_0\\ w_1\end{bmatrix}.
+\]
+Therefore, in the form $\mathbf{y}=\mathbf{X}\mathbf{w}$,
+\[
+\mathbf{y}=\begin{bmatrix}y_1\\ y_2\end{bmatrix}\in\mathbb{R}^2,\quad
+\mathbf{w}=\begin{bmatrix}w_0\\ w_1\end{bmatrix}\in\mathbb{R}^2,\quad
+\mathbf{X}=\begin{bmatrix}
+1 & x_1\\
+1 & x_2
+\end{bmatrix}\in\mathbb{R}^{2\times 2}.
+\]
+\\
+\\
+3. We have the linear system
+\[
+\mathbf{y}=\mathbf{X}\mathbf{w},\qquad where\
+\mathbf{X}=\begin{bmatrix}1 & x_1\\ 1 & x_2\end{bmatrix},\ 
+\mathbf{y}=\begin{bmatrix}y_1\\ y_2\end{bmatrix},\ 
+\mathbf{w}=\begin{bmatrix}w_0\\ w_1\end{bmatrix}.
+\]
+An unique solution $\mathbf{w}$ exists iff $\mathbf{X}$ is invertible; equivalently, $\det(\mathbf{X})\neq 0$ or $\mathrm{rank}(\mathbf{X})=2$.
+Compute
+\[
+\det(\mathbf{X})=
+\begin{vmatrix}
+1 & x_1\\
+1 & x_2
+\end{vmatrix}
+= x_2-x_1.
+\]
+Hence $\mathbf{X}$ is invertible iff $x_1\neq x_2$. In terms of the dataset, we need the two points to have distinct $x$-coordinates; otherwise the two rows of $\mathbf{X}$ are identical and the system cannot determine a unique line. When $x_1\neq x_2$, the unique solution is
+\[
+\mathbf{w}=\mathbf{X}^{-1}\mathbf{y}.
+\]
+\\
+\\
+4. Assuming $x_1\neq x_2$, so $\mathbf{X}$ is invertible. From (3),
+\[
+\mathbf{w}=\mathbf{X}^{-1}\mathbf{y},\qquad 
+\mathbf{X}=\begin{bmatrix}1 & x_1\\ 1 & x_2\end{bmatrix},\ 
+\mathbf{y}=\begin{bmatrix}y_1\\ y_2\end{bmatrix}.
+\]
+Compute $\mathbf{X}^{-1}$ for a $2\times 2$ matrix:
+\[
+\mathbf{X}^{-1}=\frac{1}{\det(\mathbf{X})}
+\begin{bmatrix}
+x_2 & -x_1\\
+-1 & 1
+\end{bmatrix}
+=\frac{1}{x_2-x_1}
+\begin{bmatrix}
+x_2 & -x_1\\
+-1 & 1
+\end{bmatrix}.
+\]
+Thus
+\[
+\mathbf{w}
+=\frac{1}{x_2-x_1}
+\begin{bmatrix}
+x_2 & -x_1\\
+-1 & 1
+\end{bmatrix}
+\begin{bmatrix}y_1\\y_2\end{bmatrix}
+=\frac{1}{x_2-x_1}
+\begin{bmatrix}
+x_2y_1-x_1y_2\\
+-y_1+y_2
+\end{bmatrix}.
+\]
+Therefore
+\[
+w_1=\frac{y_2-y_1}{x_2-x_1},\qquad
+w_0=\frac{x_2y_1-x_1y_2}{x_2-x_1}.
+\]
+These match the solution from (1), since
+\[
+w_0=y_1-x_1\frac{y_2-y_1}{x_2-x_1}
+=\frac{y_1(x_2-x_1)-x_1(y_2-y_1)}{x_2-x_1}
+=\frac{x_2y_1-x_1y_2}{x_2-x_1}.
+\]
+One advantage of using matrix notation is that, even for many data points, we can still write $\mathbf{y}=\mathbf{X}\mathbf{w}$ and use standard linear algebra methods instead of doing case-by-case substitution.
+\\
+\\
+5. When $D$ contains more than two points, the matrix $\mathbf{X}\in\mathbb{R}^{n\times 2}$ with $n>2$ is no longer square, so $\mathbf{X}^{-1}$ does not exist. So the expression \(\mathbf{w}=\mathbf{X}^{-1}\mathbf{y}\)  does not apply directly. In general, with more equations than unknowns, the system $\mathbf{y}=\mathbf{X}\mathbf{w}$ is overdetermined and typically has no exact solution. Instead, one solves the least squares problem
+\[
+\min_{\mathbf{w}}\|\mathbf{y}-\mathbf{X}\mathbf{w}\|^2,
+\]
+whose solution is
+\[
+\mathbf{w}=(\mathbf{X}^\top \mathbf{X})^{-1}\mathbf{X}^\top \mathbf{y}.
+\]
+Hence the analytical inverse formula only applies in the square matrix case. With many data points, we must use the normal equation or other optimization methods.
+\\
+\\
+6. \textbf{Code:}
+\begin{verbatim}
+x1, y1 = 1, 2
+x2, y2 = 3, 6
+
+X = np.array([[1, x1], [1, x2]])
+y = np.array([y1, y2])
+
+w = np.linalg.solve(X, y)
+w0, w1 = w
+
+print("X =\n", X)
+print("y =", y.tolist())
+print("w =", w.tolist())
+
+print("check y1:", w0 + w1*x1)
+print("check y2:", w0 + w1*x2)
+\end{verbatim}
+\textbf{Output:}
+\begin{verbatim}
+X =
+ [[1 1]
+ [1 3]]
+y = [2, 6]
+w = [0.0, 2.0]
+check y1: 2.0
+check y2: 6.0
+\end{verbatim}
+
 \end{solution}
 
 \color{black}
@@ -118,7 +281,67 @@ $$y = f(x_1, x_2) = \exp\left(-(x_1 - 2)^2 - (x_2 - 1)^2 \right)$$
 
 
 \begin{solution}
-	Your solution here.
+
+1. \textbf{Code and Plot:}
+\begin{verbatim}
+x = np.linspace(-5, 30, 400)
+y = -3*x**2 + 72*x + 70
+plt.plot(x, y)
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("y = -3x^2 + 72x + 70")
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 2.1.png}
+\end{figure}
+The plot shows a downward-opening parabola with a single peak, indicating that a maximum height exists and is unique. This follows from the functional form: since the coefficient of $x^2$ is negative, the quadratic opens downward and therefore attains a unique global maximum at its vertex.
+\\
+\\
+2. To maximize \(y(x)=-3x^2+72x+70,\) we take the derivative:
+\[
+\frac{dy}{dx}=-6x+72.
+\]
+\[
+-6x+72=0 \quad \Rightarrow \quad x=12.
+\]
+Since the quadratic opens downward ($-3<0$), this critical point corresponds to a maximum. And the maximum height is
+\[
+y(12)=-3(12)^2+72(12)+70
+= -432+864+70
+=502.
+\]
+Thus, Nari should give the plant $12$ ounces of water per week, and the plant will grow to a height of $502$ mm.
+\\
+\\
+3. \textbf{Code and Plot:}
+\begin{verbatim}
+x1 = np.linspace(0, 6, 200)
+x2 = np.linspace(0, 6, 200)
+X1, X2 = np.meshgrid(x1, x2)
+
+Y = np.exp(-((X1 - 2)**2 + (X2 - 1)**2))
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection="3d")
+ax.plot_surface(X1, X2, Y)
+ax.set_xlabel("x1 (oz water)")
+ax.set_ylabel("x2 (hours sunlight)")
+ax.set_zlabel("y (height)")
+ax.set_title(r"$y=\exp(-((x_1-2)^2+(x_2-1)^2))$")
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 2.3.png}
+\end{figure}
+Since $(x_1-2)^2\ge 0$ and $(x_2-1)^2\ge 0$, we have
+\[
+-(x_1-2)^2-(x_2-1)^2 \le 0
+\quad\Rightarrow\quad
+f(x_1,x_2)\le e^{0}=1,
+\]
+with equality iff $(x_1-2)^2=(x_2-1)^2=0$, i.e., $(x_1,x_2)=(2,1)$. Thus the maximizer is $(x_1,x_2)=(2,1)$ and the maximum value is $f(2,1)=1$. Which is the global maximum.
+
 \end{solution}
 
 \newpage 
@@ -164,7 +387,170 @@ In this class, one of our main focuses is to model the unexpected variations in 
 \newpage
 
 \begin{solution}
-	Your solution here.
+
+1. (a). A Gaussian model assigns positive probability to impossible values such as negative size or weight, namely
+\[
+\mathbb{P}(S<0)>0 \quad \text{and} \quad \mathbb{P}(W<0)>0,
+\]
+but physical packages must satisfy \(S\ge 0\) and \(W\ge 0\).
+\\
+\\
+1.(b). We draw \(500\) samples from the joint Gaussian distribution
+\[
+(S,W)^T \sim \mathcal{N}\!\left(
+\begin{bmatrix}120\\4\end{bmatrix},
+\begin{bmatrix}1.5 & 1\\ 1 & 1.5\end{bmatrix}
+\right),
+\]
+and generate a bivariate histogram to visualize the joint density. \textbf{Code:}
+\begin{verbatim}
+mu = np.array([120, 4])
+Sigma = np.array([[1.5, 1],[1, 1.5]])
+
+samples = mvn(mean=mu, cov=Sigma).rvs(size=500)
+
+S = samples[:, 0]
+W = samples[:, 1]
+
+sns.histplot(x=S, y=W, bins=30, cbar=True)
+plt.xlabel("S (in^3)")
+plt.ylabel("W (lb)")
+plt.title("Bivariate Histogram of (S, W)")
+
+print("Empirical mean of S:", S.mean())
+print("Empirical mean of W:", W.mean())
+\end{verbatim}
+\textbf{Output:}
+\begin{verbatim}
+Empirical mean of S: 120.01055322576612
+Empirical mean of W: 4.041579855230118
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 3.1.png}
+\end{figure}
+The empirical means are \(\hat{\mathbb{E}}[S] = 120.01,\
+\hat{\mathbb{E}}[W] = 4.04,\) which are very close to the theoretical values\(\mathbb{E}[S] = 120,\ \mathbb{E}[W] = 4.\)Thus, the bivariate histogram peaks near \((120,4)\), confirming the expected most likely size and weight.
+\\
+\\
+2. \textbf{Code and Plot:}
+\begin{verbatim}
+mu = np.array([120, 4])
+Sigma = np.array([[1.5, 1], [1, 1.5]])
+
+rv = mvn(mean=mu, cov=Sigma)
+
+W_vals = np.linspace(0, 10, 1001)
+
+S1 = 118
+S2 = 122
+
+points_S1 = np.column_stack((np.full_like(W_vals, S1), W_vals))
+points_S2 = np.column_stack((np.full_like(W_vals, S2), W_vals))
+
+pdf_S1 = rv.pdf(points_S1)
+pdf_S2 = rv.pdf(points_S2)
+
+plt.plot(W_vals, pdf_S1, label="S = 118")
+plt.plot(W_vals, pdf_S2, label="S = 122")
+
+plt.xlabel("W")
+plt.ylabel("p(W, S)")
+plt.title("Joint PDF slices at S = 118 and S = 122")
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 3.2.png}
+\end{figure}
+From the plots, when \(S=118\), the joint density \(p(W,S)\) attains its peak at a smaller value of \(W\).  When \(S=122\), the peak shifts to a larger value of \(W\).  This indicates that larger values of \(S\) tend to be associated with larger values of \(W\), so \(S\) and \(W\) are positively correlated. Moreover, from the covariance matrix
+\[
+\Sigma=\begin{bmatrix}1.5 & 1\\ 1 & 1.5\end{bmatrix},
+\]
+the correlation coefficient is
+\[
+\mathrm{Corr}(S,W)=\frac{\mathrm{Cov}(S,W)}{\sqrt{\mathrm{Var}(S)\mathrm{Var}(W)}}
+=\frac{1}{\sqrt{1.5\cdot 1.5}}=\frac{2}{3}>0,
+\]
+which confirms the positive correlation.
+\\
+\\
+3. \(T = 60 + 0.6W + 0.2S + \varepsilon,\) where \(\varepsilon \sim \mathcal{N}(0,5)\) is independent.
+\[
+\mathbb{E}[T] = 60 + 0.6\,\mathbb{E}[W] + 0.2\,\mathbb{E}[S] + \mathbb{E}[\varepsilon]
+= 60 + 0.6(4) + 0.2(120) + 0
+= 86.4.
+\]
+\[
+\mathrm{Var}(T)=\mathrm{Var}(0.6W+0.2S)+\mathrm{Var}(\varepsilon)
+\]
+\[
+=0.6^2\mathrm{Var}(W)+0.2^2\mathrm{Var}(S)+2(0.6)(0.2)\mathrm{Cov}(W,S)+5.
+\]
+\[
+=0.36(1.5)+0.04(1.5)+2(0.12)(1)+5
+=0.54+0.06+0.24+5
+=5.84.
+\]
+\\
+\\
+4. Let a package be classified as fragile if \(W<4\).  For each package,
+\[
+p = \mathbb{P}(W<4).
+\]
+Since packages are iid, conditional on \(N=n\), the number of fragile packages follows a binomial distribution:
+\[
+F \mid N=n \sim \mathrm{Binomial}(n,p).
+\]
+The PMF is
+\[
+\mathbb{P}(F=k \mid N=n)=\binom{n}{k}p^k(1-p)^{n-k}, 
+\quad k=0,1,\ldots,n,
+\]
+where
+\[
+p=\mathbb{P}(W<4).
+\]
+\\
+\\
+5. (a). \textbf{Code:}
+\begin{verbatim}
+mu = np.array([120, 4])
+Sigma = np.array([[1.5, 1], [1, 1.5]])
+
+rv_SW = mvn(mean=mu, cov=Sigma)
+
+def simulate_T_star():
+    N = poisson(mu=3).rvs(size=24).sum()
+    
+    if N == 0:
+        return 0.0
+    
+    samples = rv_SW.rvs(size=N)
+    S = samples[:, 0]
+    W = samples[:, 1]
+    
+    eps = norm(loc=0, scale=np.sqrt(5)).rvs(size=N)
+    
+    T = 60 + 0.6 * W + 0.2 * S + eps
+    
+    return T.sum()
+\end{verbatim}
+\\
+\\
+5. (b). \textbf{Code:}
+\begin{verbatim}
+M = 1000
+Tstar_samples = np.array([simulate_T_star() for _ in range(M)])
+
+print("Empirical mean of T*:", Tstar_samples.mean())
+print("Empirical std of T*:", Tstar_samples.std(ddof=1))
+\end{verbatim}
+\textbf{Output:}
+\begin{verbatim}
+Empirical mean of T*: 6203.037291870622
+Empirical std of T*: 761.9121823483968
+\end{verbatim}
+
 \end{solution} 
 
 \newpage 
@@ -200,7 +586,101 @@ In this class, we will bridge theory and practice through implementing the metho
 \end{problem}
 
 \begin{solution}
-	Your solution here.
+
+1. Fixed Code and Plot:
+\begin{verbatim}
+x = data[:, 0]
+y = data[:, 1]
+
+plt.scatter(x, y)
+plt.xlabel("x")
+plt.ylabel("y")
+plt.title("Scatter plot of data")
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 4.1.png}
+\end{figure}
+Steve’s code incorrectly indexed rows instead of columns when extracting the variables \(x\) and \(y\). After fixing the code and plotting the data, the scatter plot shows a clear increasing linear trend. Thus, there appears to be an approximately linear relationship between \(x\) and \(y\), making a linear regression model appropriate.
+\\
+\\
+2. Fixed Code:
+\begin{verbatim}
+ccintercept = np.ones((x.shape[0], 1))
+x_col = x.reshape(-1, 1)
+X = np.hstack([intercept, x_col])
+
+print("y shape:", y.shape)
+print("X shape:", X.shape)
+\end{verbatim}
+After correction, the shapes are:
+\[
+y.\text{shape} = (n,), \qquad X.\text{shape} = (n,2).
+\]
+There is no second coordinate in \texttt{y.shape} because \(y\) is stored as a one-dimensional array representing a vector of length \(n\), rather than as a two-dimensional column matrix.
+\\
+\\
+3. Since the design matrix has shape \(X \in \mathbb{R}^{n \times 2}\) (one column for the intercept and one for \(x\)), the weight vector must satisfy
+\[
+\hat{y} = Xw \in \mathbb{R}^n.
+\]
+Therefore,
+\[
+w \in \mathbb{R}^{2 \times 1}.
+\]
+Equivalently, the OLS estimator
+\[
+\hat{w} = (X^\top X)^{-1}X^\top y
+\]
+has shape
+\[
+\hat{w} \in \mathbb{R}^{2\times 1},
+\]
+corresponding to the intercept and slope coefficients.
+\\
+\\
+4. Fixed Code and Plot:
+\begin{verbatim}
+class LinearRegression:
+    def __init__(self):
+        self.w = None
+
+    def fit(self, X, y):
+        # Closed-form OLS solution
+        self.w = np.linalg.inv(X.T @ X) @ X.T @ y
+        return self.w
+
+    def predict(self, X):
+        return X @ self.w
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{fig 4.4.png}
+\end{figure}
+
+
+Steve’s implementation contained several issues:
+\begin{itemize}
+\item Matrix multiplication was incorrectly performed using elementwise \texttt{*} instead of \texttt{@}.
+\item The matrix inverse was incorrectly written as \texttt{**-1} instead of using \(\left(X^\top X\right)^{-1}\).
+\item The fitted weights were not stored in \texttt{self.w}.
+\item The \texttt{predict} method did not reference \texttt{self.w} and was missing the \texttt{self} argument.
+\end{itemize}
+\\
+\\
+5. Revised Code: 
+\begin{verbatim}
+mse = np.mean((y - y_pred)**2)
+print(mse)
+\end{verbatim}
+The Mean Squared Error can be written in vector form as
+\[
+\mathrm{MSE} = \frac{1}{n}\|y - \hat{y}\|_2^2
+= \frac{1}{n}(y - \hat{y})^\top (y - \hat{y}).
+\]
+This computes the loss directly using vector operations without explicit loops.
+
+
 \end{solution}
 
 \end{document}
