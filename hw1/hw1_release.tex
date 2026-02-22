@@ -180,11 +180,153 @@ dictates how quickly the kernel decays).
 \newpage
 
 \begin{solution}
-	Your solution here.
+\\\\
+1. (a). 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{hw1/img_output/p1.1a.png}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{$k=1$:} The predictor interpolates the training data and produces a very jagged, highly variable step-like curve. This is the most flexible setting and is sensitive to noise/outliers. In terms of bias-variance trade-off, it has a low bias and high variance.
+    \item \textbf{$k=3$:} Averaging over the $3$ nearest neighbors smooths the fit relative to $k=1$. The curve still tracks local fluctuations, but with reduced variability with moderate bias and variance.
+    \item \textbf{$k=N-1$:} Each prediction averages almost all training points, so the model becomes nearly constant across $x$. This heavily oversmooths the data and underfits. It has a very high bias and low variance. 
+\end{itemize}
+Overall, increasing $k$ increases smoothing and reduces variance, but can increase bias and lead to underfitting when $k$ is very large.
+\\\\
+1. (b). \textbf{Code Realization:}
+\begin{verbatim}
+def model_mse(predictions, true):
+    """
+    Calculate the MSE for the given model predictions, with respect to the true values
+
+    :param predictions: predictions given by the model
+    :param true: corresponding true values
+    :return: the mean squared error
+    """
+    return np.mean((predictions - true) ** 2)
+
+# Compute the MSEs for different values of k
+
+N = year_train.shape[0]
+ks = [1, 3, N - 1]
+mses = {}
+
+for k in ks:
+    yhat_test = predict_knn(year_test, k, year_train, temp_train)
+    mses[k] = model_mse(yhat_test, temp_test)
+
+mses
+\end{verbatim}
+\textbf{Output: }
+\begin{verbatim}
+{1: np.float64(1.7406000000000004),
+ 3: np.float64(3.8907662222222212),
+ 56: np.float64(9.528571442602042)}
+\end{verbatim}
+We quantitatively evaluated the $k$NN regressors by computing the mean squared error (MSE) on the test set for $k \in \{1, 3, N-1\}$, where $N$ is the size of the training dataset. The resulting test MSEs are:
+\[
+\text{MSE}(k=1) \approx 1.74, \quad
+\text{MSE}(k=3) \approx 3.89, \quad
+\text{MSE}(k=N-1) \approx 9.53.
+\]
+Among the three choices, the model with $k=1$ achieves the lowest test MSE. This indicates that, for this dataset, a highly local predictor generalizes best to the test data, while increasing $k$ leads to oversmoothing and substantially worse performance. In particular, the case $k=N-1$ severely underfits by predicting an almost constant value, resulting in the largest error.
+\\\\
+2. (a). \textbf{Code Realization:}
+\begin{verbatim}
+def kernel_regressor(x_new, tau, x_train, y_train):
+    """
+    Run f_tau(x) with parameter tau on every entry of x_new.
+
+    :param x_new: a numpy array of x_values on which to do prediction. Shape is (n,)
+    :param float tau: lengthscale parameter
+    :param y_train: the x coordinates of the training set
+    :param y_train: the y coordinates of the training set
+    :return: if x_new = [x_1, x_2, ...], then return [f(x_1), f(x_2), ...]
+             where f is calculated wrt to the training data and tau
+    """
+    dists_sq = (x_train.reshape(1, -1) - x_new.reshape(-1, 1)) ** 2
+    K = np.exp(-dists_sq / tau)
+    numerator = K @ y_train
+    denominator = np.sum(K, axis=1)
+    return numerator / denominator
+\end{verbatim}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{hw1/img_output/p1.2a.png}
+\end{figure}
+For $\tau = 1$, the kernel is highly localized, so predictions are dominated by very nearby training points. The resulting fit is highly variable and closely follows the training data, including local noise. Increasing the lengthscale to $\tau = 50$ produces a smoother curve that still captures major local temperature fluctuations while reducing high-frequency noise. For $\tau = 2500$, the kernel decays very slowly, so many distant points receive similar weights; the fit becomes overly smooth and captures only broad, long-term trends, effectively underfitting the data.
+\\\\
+Overall, increasing $\tau$ increases smoothing and bias while decreasing variance, mirroring the behavior observed when increasing k in kNN regression.
+\\\\
+2. (b). Let the training set be $\mathcal{D}_{\text{train}}=\{(x_n,y_n)\}_{n=1}^N$ and the test set be $\mathcal{D}_{\text{test}}=\{(x'_m,y'_m)\}_{m=1}^M$. The test MSE of the kernel regressor is
+\[
+\operatorname{MSE}(\tau)
+=\frac{1}{M}\sum_{m=1}^{M}\left(
+y'_m
+-
+\frac{\sum_{n=1}^{N} K_{\tau}(x_n,x'_m)\,y_n}{\sum_{n=1}^{N} K_{\tau}(x_n,x'_m)}
+\right)^2.
+\]
+2. (c). \textbf{Code Realization:}
+\begin{verbatim}
+taus = [1, 50, 2500]
+mses_tau = {}
+
+for tau in taus:
+    yhat_test = kernel_regressor(year_test, tau, year_train, temp_train)
+    mses_tau[tau] = model_mse(yhat_test, temp_test)
+
+mses_tau
+\end{verbatim}
+\textbf{Output:}
+\begin{verbatim}
+{1: np.float64(1.9472621565209178),
+ 50: np.float64(1.858289916961345),
+ 2500: np.float64(8.333886806980791)}
+\end{verbatim}
+We computed the mean squared error (MSE) on the test set for the kernel regression model
+using three values of the lengthscale parameter $\tau$. The resulting test errors are
+\[
+\text{MSE}(\tau=1) \approx 1.95, \qquad
+\text{MSE}(\tau=50) \approx 1.86, \qquad
+\text{MSE}(\tau=2500) \approx 8.33.
+\]
+Among these choices, $\tau=50$ yields the lowest test MSE. Conceptually, this value provides a good balance between bias and variance: it smooths out high-frequency noise present when $\tau$ is very small, while still retaining sufficient locality to capture meaningful temperature fluctuations. In contrast, $\tau=1$ is overly sensitive to local noise, and $\tau=2500$ oversmooths the data and underfits by averaging over too many distant points.
+\\\\
+Choosing $\tau$ based on the training set $\mathcal{D}_{\text{train}}$ rather than the test set $\mathcal{D}_{\text{test}}$ would be a bad idea because it can lead to overfitting: the selected $\tau$ may minimize training error by fitting noise, but fail to generalize to unseen data. The test set should be used only for final evaluation, not for tuning hyperparameters.
+\\\\
+2. (d).  Both $k$NN regression and kernel regression are non-parametric methods that must store the entire training set in order to make predictions. Thus, the space complexity scales as $O(N)$. 
+\\\\
+Given a query point $x^*$, both methods require computing distances or kernel weights to all N training points, which costs $O(N)$.
+
+\begin{itemize}
+    \item \textbf{Kernel regression:} after computing the N kernel weights, we compute two sums, the weighted sum in the numerator and the weight sum in the denominator, so the total time per prediction is $O(N)$.
+    \item \textbf{kNN regression:} after computing the distances, we must identify the k  nearest neighbors. A full sort costs $O(N\log N)$, while selecting the k smallest distances can be done in $O(N)$. After that, averaging the k labels costs $O(k)$. Hence,
+    \[
+    \text{Time} = O(N\log N)\ \text{(with sorting)} \quad \text{or} \quad O(N)\ \text{(with selection)}.
+    \]
+\end{itemize}
+Overall, as N increases, both the model size and the computation required per prediction
+increase (at least) linearly in N.
+\\\\
+2. (e). Recall
+\[
+f_\tau(x^*)=\frac{\sum_{n=1}^N K_\tau(x_n,x^*)\,y_n}{\sum_{n=1}^N K_\tau(x_n,x^*)},
+\qquad
+K_\tau(x,x')=\exp\!\left(-\frac{(x-x')^2}{\tau}\right).
+\]
+As $\tau \to 0$, $K_\tau(x_n,x^*) \to 0$ for all $n$ with $x_n \neq x^*$, and $K_\tau(x^*,x^*)=1$. Therefore, if there exists at least one training point with $x_n=x^*$, we obtain
+\[
+\lim_{\tau\to 0} f_\tau(x^*)
+=
+\frac{\sum_{n:\,x_n=x^*} y_n}{\#\{n:\,x_n=x^*\}},
+\]
+the average of the training labels at locations exactly equal to $x^*$. In particular, if $x^*$ matches a unique training input, then $\lim_{\tau\to 0} f_\tau(x^*)=y_n$ for that point.
+
 \end{solution}
 
 \newpage
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Problem 2
@@ -195,7 +337,7 @@ dictates how quickly the kernel decays).
     \noindent Fitting by linear regression, sometimes called \textit{ordinary least-squares} (OLS), is just projecting the observation vector $\mathbf y \in \mathbb{R}^N$ orthogonally onto that subspace. Lecture 2 slides provide a good graphic to visualize this, see the slide titled ``Geometric Interpretation.'' From lecture, we also learned that $\hat {\mathbf y}$ lives in $C(\mathbf X)$ and the residual $\mathbf r = {\mathbf y} - \hat {\mathbf y}$ lives in the orthogonal complement.
 
     \begin{enumerate}
-    \item Let $\mathbf X \in \mathbb{R}^{N\times D}$ have full column rank $d$ and $\mathbf y \in \mathbb{R}^N$. Let the OLS estimator be $\mathbf w^*=(\mathbf X^\top \mathbf X)^{-1} X^\top \mathbf y$ and the fitted vector $\mathbf y = \mathbf X \mathbf w^*$. Prove that $\hat {\mathbf y}$ is the \textit{orthogonal projection} of $y$ onto $C(\mathbf X)$. In other words, show that $\hat {\mathbf y} \in C(\mathbf X)$ and $\mathbf y - \hat {\mathbf y}$ is orthogonal to $C(\mathbf X)$. \textit{Hint: To show orthogonality, look at the gradient of $\mathcal L$, the loss, with respect to $\mathbf w$}.
+    \item Let $\mathbf X \in \mathbb{R}^{N\times D}$ have full column rank $d$ and $\mathbf y \in \mathbb{R}^N$. Let the OLS estimator be $\mathbf w^*=(\mathbf X^\top \mathbf X)^{-1} X^\top \mathbf y$ and the fitted vector $\hat {\mathbf y} = \mathbf X \mathbf w^*$. Prove that $\hat {\mathbf y}$ is the \textit{orthogonal projection} of $y$ onto $C(\mathbf X)$. In other words, show that $\hat {\mathbf y} \in C(\mathbf X)$ and $\mathbf y - \hat {\mathbf y}$ is orthogonal to $C(\mathbf X)$. \textit{Hint: To show orthogonality, look at the gradient of $\mathcal L$, the loss, with respect to $\mathbf w$}.
 
     \item Prove that among all vectors in $C(\mathbf X)$, the fitted vector $\hat {\mathbf y}$ minimizes the Euclidean distance to $\mathbf y$. In other words, that for every vector $\mathbf v \in C(\mathbf X)$:
     \begin{equation*}
@@ -212,7 +354,7 @@ dictates how quickly the kernel decays).
     % Also, provide geometric interpretation of the first two properties. 
     \textit{Hint: You may use the fact that any idempotent matrix has equal rank and trace. You do not need to prove this, but it may be helpful to think about why this is true.}
     
-    \item Suppose you fit your model as in Problem 5.1. You observe that the \textbf{residual plot} exhibits a clear parabolic (U-shaped) pattern rather than random scatter around zero (as seen in lecture). Give a geometric interpretation of this phenomenon in terms of projection onto the column space of the design matrix. Also, explain how adding a quadratic basis function affects the geometry of the regression problem and the residuals.
+    \item Suppose you fit your model as in Problem 2.1. You observe that the \textbf{residual plot} exhibits a clear parabolic (U-shaped) pattern rather than random scatter around zero (as seen in lecture). Give a geometric interpretation of this phenomenon in terms of projection onto the column space of the design matrix. Also, explain how adding a quadratic basis function affects the geometry of the regression problem and the residuals.
         \begin{figure}[H]
             \centering
             \includegraphics[scale=0.7]{img_input/residual_plot.png}
@@ -225,7 +367,89 @@ dictates how quickly the kernel decays).
 \newpage
 
 \begin{solution}
-	Your solution here.
+\\\\
+1. Let $X\in\mathbb{R}^{N\times D}$ have full column rank and $y\in\mathbb{R}^N$. Consider the OLS objective
+\[
+\mathcal{L}(w)=\frac{1}{2}\|y-Xw\|_2^2 .
+\]
+The gradient is
+\[
+\nabla_w \mathcal{L}(w)= -X^\top(y-Xw)=X^\top(Xw-y).
+\]
+At the minimizer $w^*=(X^\top X)^{-1}X^\top y$, we have the first-order optimality condition
+\[
+\nabla_w \mathcal{L}(w^*)=0
+\quad\Longrightarrow\quad
+X^\top(Xw^*-y)=0
+\quad\Longrightarrow\quad
+X^\top(y-Xw^*)=0.
+\]
+Define $\hat y=Xw^*$. Then $\hat y\in C(X)$ by construction, it is a linear combination of the columns of $X$. Let $r=y-\hat y$ be the residual. The condition above becomes \(X^\top r=0.\)
+\\\\
+Since $C(X)=\{Xv:\ v\in\mathbb{R}^D\}$, for any $z\in C(X)$ we can write $z=Xv$ for some $v$, and thus
+\[
+z^\top r = (Xv)^\top r = v^\top X^\top r = v^\top 0 = 0.
+\]
+Hence $r=y-\hat y$ is orthogonal to every vector in $C(X)$, i.e.\ $y-\hat y \perp C(X)$. Therefore $\hat y\in C(X)$ and $y-\hat y\perp C(X)$, which proves that $\hat y$ is the orthogonal projection of $y$
+onto $C(X)$.
+\\\\
+2. $\hat y\in C(X)$ and the residual $r := y-\hat y$ satisfies \(r \perp C(X).\) Let $v\in C(X)$ be arbitrary. Then $v-\hat y \in C(X)$ as well. Hence \(r \perp (v-\hat y).\) Now decompose
+\[
+y-v = (y-\hat y) + (\hat y - v) = r - (v-\hat y).
+\]
+Using the Pythagorean theorem for orthogonal vectors $r$ and $(v-\hat y)$, we get
+\[
+\|y-v\|_2^2
+= \|r-(v-\hat y)\|_2^2
+= \|r\|_2^2 + \|v-\hat y\|_2^2
+\ge \|r\|_2^2
+= \|y-\hat y\|_2^2.
+\]
+Hence, for every $v\in C(X)$,\(|y-\hat y\|_2^2 \le \|y-v\|_2^2,\) so $\hat y$ is the unique vector in $C(X)$ that minimizes the Euclidean distance to $y$.
+\\\\
+3. Let $X\in\mathbb{R}^{N\times D}$ have full column rank $d$ and define the projection (hat) matrix
+\[
+P := X(X^\top X)^{-1}X^\top.
+\]
+\paragraph{Symmetry: ($P^\top = P$).}
+Using $(ABC)^\top = C^\top B^\top A^\top$ and the fact that $X^\top X$ is symmetric (hence $(X^\top X)^{-1}$ is also symmetric),
+\[
+P^\top = \left(X(X^\top X)^{-1}X^\top\right)^\top
+= X\left((X^\top X)^{-1}\right)^\top X^\top
+= X(X^\top X)^{-1}X^\top
+= P.
+\]
+
+\paragraph{Idempotence: ($P^2 = P$).}
+Compute
+\[
+P^2
+= X(X^\top X)^{-1}X^\top X(X^\top X)^{-1}X^\top
+= X(X^\top X)^{-1}(X^\top X)(X^\top X)^{-1}X^\top
+= X(X^\top X)^{-1}X^\top
+= P.
+\]
+
+\paragraph{Rank and trace: $\mathrm{rank}(P)=d$ and  $\mathrm{trace}(P)=d$.}
+First, $\mathrm{Im}(P)\subseteq C(X)$ since $Py = X\big((X^\top X)^{-1}X^\top y\big)\in C(X)$ for all $y$.
+Conversely, for any $z\in C(X)$, write $z=Xa$. Then
+\[
+Pz = PXa = X(X^\top X)^{-1}X^\top Xa = X(X^\top X)^{-1}(X^\top X)a = Xa = z,
+\]
+so every vector in $C(X)$ is in the image of $P$. Hence $\mathrm{Im}(P)=C(X)$ and therefore
+\[
+\mathrm{rank}(P)=\dim(C(X))=\mathrm{rank}(X)=d.
+\]
+Finally, since $P$ is idempotent ($P^2=P$), we may use the fact that any idempotent matrix has
+$\mathrm{trace}(P)=\mathrm{rank}(P)$. Thus
+\[
+\mathrm{trace}(P)=d.
+\]
+4. A clear parabolic U-shaped pattern in the residual plot indicates that the true response
+vector $y$ contains a systematic component that is not captured by the column space $C(X)$ of the current design matrix. Geometrically, linear regression projects $y$ orthogonally onto $C(X)$, and the residual $r=y-\hat y$ is the component of $y$ lying in the orthogonal complement $C(X)^\perp$. The structured U-shaped pattern shows that this unexplained component is not random noise, but rather has a coherent direction that is orthogonal to $C(X)$, corresponding to curvature in the true relationship. 
+\\\\
+Adding a quadratic basis function such as including $x^2$ as an additional column in $X$ enlarges the column space from $C(X)$ to a higher-dimensional subspace that can represent curvature. Geometrically, this rotates and expands the projection subspace so that a larger portion of $y$ lies within it. As a result, the orthogonal projection captures the previously missing quadratic structure, and the residual vector loses its systematic parabolic shape and becomes closer to random scatter around zero, indicating a better model fit.
+
 \end{solution}
 
 \newpage
@@ -282,7 +506,70 @@ dictates how quickly the kernel decays).
 \newpage
 
 \begin{solution}
-	Your solution here.
+\\\\
+1. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{hw1/img_output/p3.1.png}
+\end{figure}
+\noindent
+2. \textbf{Code Realization:}
+\begin{verbatim}
+bases = ['a', 'b', 'c', 'd']
+mse_basis = {}
+
+for part in bases:
+    Phi_train = make_basis(year_train, part)
+    w = find_weights(Phi_train, temp_train)
+
+    Phi_test = make_basis(year_test, part)
+    yhat_test = Phi_test @ w
+
+    mse = model_mse(yhat_test, temp_test)
+    mse_basis[part] = mse
+
+mse_basis
+\end{verbatim}
+\textbf{Output:}
+\begin{verbatim}
+{'a': np.float64(7.955749288900331),
+ 'b': np.float64(8.708150363771939),
+ 'c': np.float64(5.967024534016803),
+ 'd': np.float64(58.909539003580264)}
+\end{verbatim}
+We evaluated the test mean squared error (MSE) for each basis regression. The results are:
+\[
+\text{(a) Polynomial basis: } \text{MSE} \approx 7.96, \qquad
+\text{(b) Gaussian basis: } \text{MSE} \approx 8.71,
+\]
+\[
+\text{(c) Cosine basis ($j=1,\dots,9$): } \text{MSE} \approx 5.97, \qquad
+\text{(d) Cosine basis ($j=1,\dots,49$): } \text{MSE} \approx 58.91.
+\]
+Among the four models, the cosine basis with $j=1,\dots,9$ achieves the lowest test error and
+thus generalizes best. The polynomial and Gaussian bases exhibit moderate test error, suggesting some underfitting due to limited flexibility. In contrast, the high-frequency cosine basis ($j=1,\dots,49$) dramatically overfits the training data: its large number of basis functions allows it to fit noise, leading to very poor generalization and a much larger test MSE.
+\\\\
+3. The transforms $\phi$ map the original one-dimensional input (year) into a higher-dimensional
+feature space, allowing a linear model in the transformed space to represent nonlinear relationships in the original input. By choosing appropriate basis functions, we can capture curvature, periodicity, or localized structure in the data while still using linear regression. In addition, the scaling transforms help improve numerical stability by keeping feature magnitudes well-conditioned, making the optimization more reliable.
+\\\\
+4. After training, linear regression stores only the learned weight vector $w\in\mathbb{R}^D$, where $D$ is the number of features. Thus, the model size scales as $O(D)$ and does not depend on the number of training points $N$. To make a prediction for a new input $x^*$, we compute $\phi(x^*)$ and then evaluate the inner product $w^\top \phi(x^*)$, which costs $O(D)$. Therefore, the time per prediction is independent of $N$ and linear in $D$.
+\\\\
+In contrast, both $k$NN and kernel regression must store the entire training set, so the model
+size scales as $O(N)$. For each prediction, distances or kernel values between the test point
+and all $N$ training points must be computed, resulting in $O(N)$ time per prediction (with
+an additional $O(N\log N)$ factor for $k$NN if full sorting is used).
+\\\\
+Linear regression shifts most of the computational cost to training, yielding a compact model
+and fast predictions that scale with $D$ rather than $N$. Nonparametric methods such as $k$NN
+and kernel regression have minimal training cost but incur higher storage and prediction-time costs that grow with the size of the training set.
+\\\\
+5. kNN, kernelized regression, and linear regression with bases differ in flexibility, interpretability, and computational cost. kNN and kernelized regression are nonparametric methods that can fit complex patterns, but they require storing the entire training set and incur $O(N)$ time per prediction. Their performance depends strongly on hyperparameters such as the number of neighbors or kernel bandwidth.
+\\\\
+Linear regression with bases is a parametric approach that summarizes the data using a fixed number of coefficients. It is more interpretable and computationally efficient at prediction time, but its expressiveness is limited by the chosen basis and may underfit if the basis is not rich enough.
+\\\\
+No single regression method is universally best. The optimal choice depends on the data, noise level, and computational constraints. Having multiple regression models allows us to compare their generalization performance using a validation or test set and select the model that achieves the best bias--variance trade-off.
+
+
 \end{solution}
 
 \newpage
@@ -338,7 +625,205 @@ dictates how quickly the kernel decays).
 \newpage
 
 \begin{solution}
-	Your solution here.
+\\\\
+1. We assume the likelihood model
+\[
+p(\mathbf{y}\mid \mathbf{w}, X) = \mathcal{N}(X\mathbf{w}, \sigma^2 I),
+\]
+and the prior
+\[
+p(\mathbf{w}) = \mathcal{N}\!\left(0, \frac{\sigma^2}{\lambda} I\right).
+\]
+Maximizing the posterior $p(\mathbf{w}\mid X,\mathbf{y})$ is equivalent to maximizing the log-posterior,
+\[
+\log p(\mathbf{y}\mid \mathbf{w}, X) + \log p(\mathbf{w}),
+\]
+up to an additive constant independent of $\mathbf{w}$. The log-likelihood is
+\[
+\log p(\mathbf{y}\mid \mathbf{w}, X)
+= -\frac{1}{2\sigma^2}\|\mathbf{y}-X\mathbf{w}\|_2^2 + \text{constant},
+\]
+and the log-prior is
+\[
+\log p(\mathbf{w})
+= -\frac{\lambda}{2\sigma^2}\|\mathbf{w}\|_2^2 + \text{constant}.
+\]
+Therefore, maximizing the posterior is equivalent to minimizing
+\[
+\frac{1}{2\sigma^2}\|\mathbf{y}-X\mathbf{w}\|_2^2
++ \frac{\lambda}{2\sigma^2}\|\mathbf{w}\|_2^2.
+\]
+Multiplying by $\sigma^2$ (which does not affect the minimizer), we obtain the objective
+\[
+\mathcal{L}_{\text{ridge}}(\mathbf{w})
+= \frac{1}{2}\|\mathbf{y}-X\mathbf{w}\|_2^2
++ \frac{\lambda}{2}\|\mathbf{w}\|_2^2,
+\]
+which is exactly the ridge regression loss.
+\\\\
+2. To minimize
+\[
+\mathcal{L}_{\text{ridge}}(\mathbf{w})
+=\frac{1}{2}\|\mathbf{y}-X\mathbf{w}\|_2^2+\frac{\lambda}{2}\|\mathbf{w}\|_2^2,
+\]
+take the gradient with respect to $\mathbf{w}$:
+\[
+\nabla_{\mathbf{w}}\mathcal{L}_{\text{ridge}}(\mathbf{w})
+= -X^\top(\mathbf{y}-X\mathbf{w})+\lambda \mathbf{w}
+= (X^\top X+\lambda I)\mathbf{w}-X^\top \mathbf{y}.
+\]
+Setting this equal to zero yields the normal equations
+\[
+(X^\top X+\lambda I)\mathbf{w}=X^\top \mathbf{y}.
+\]
+Since $\lambda>0$, the matrix $X^\top X+\lambda I$ is positive definite and invertible, so the unique minimizer is
+\[
+\mathbf{w}^*=(X^\top X+\lambda I)^{-1}X^\top \mathbf{y}.
+\]
+3.~Assume the likelihood is Gaussian as before,
+\[
+p(\mathbf{y}\mid \mathbf{w},X)=\mathcal{N}(X\mathbf{w},\sigma^2 I),
+\]
+and the coordinates of $\mathbf{w}$ are i.i.d.\ Laplace:
+\[
+w_d \sim \mathrm{Laplace}\!\left(0,\frac{2\sigma^2}{\lambda}\right).
+\]
+Then
+\[
+\log p(\mathbf{y}\mid \mathbf{w},X)
+= -\frac{1}{2\sigma^2}\|\mathbf{y}-X\mathbf{w}\|_2^2+\text{constant}.
+\]
+For the prior, using the Laplace pdf $p(w_d)=\frac{1}{2b}\exp(-|w_d|/b)$ with $b=\frac{2\sigma^2}{\lambda}$,
+\[
+\log p(\mathbf{w})
+=\sum_{d=1}^D \left(-\log(2b)-\frac{|w_d|}{b}\right)
+= -\frac{1}{b}\|\mathbf{w}\|_1+\text{const}
+= -\frac{\lambda}{2\sigma^2}\|\mathbf{w}\|_1+\text{constant}.
+\]
+Therefore, maximizing the posterior is equivalent to maximizing
+\[
+\log p(\mathbf{y}\mid \mathbf{w},X)+\log p(\mathbf{w})
+= -\frac{1}{2\sigma^2}\|\mathbf{y}-X\mathbf{w}\|_2^2
+-\frac{\lambda}{2\sigma^2}\|\mathbf{w}\|_1+\text{constant},
+\]
+which is equivalent to minimizing (multiply by $\sigma^2$)
+\[
+\frac{1}{2}\|\mathbf{y}-X\mathbf{w}\|_2^2+\frac{\lambda}{2}\|\mathbf{w}\|_1
+= \mathcal{L}_{\text{lasso}}(\mathbf{w}).
+\]
+4. There is no general closed-form solution for the LASSO estimator because the $\ell_1$ regularization term $\|\mathbf{w}\|_1 = \sum_d |w_d|$ is not differentiable at $w_d = 0$. As a result, the first-order optimality conditions cannot be written as a system of linear equations, unlike ordinary least squares or ridge regression. Consequently, the minimizer of $\mathcal{L}_{\text{lasso}}(\mathbf{w})$ must be found using numerical optimization methods rather than a closed-form expression.
+\\\\
+5. \textbf{Code Realization:}
+\begin{verbatim}
+def find_lasso_weights(lam, X, y):
+    """
+    Fit the weights of a LASSO linear regression through the coordinate descent algorithm.
+
+    :param lam: the lambda parameter
+    :param X: the design matrix with training set features (shape N x D)
+    :param y: the training set labels (shape N,)
+    :return: the fitted weights (shape D,)
+    """
+
+    N, D = X.shape
+    w = np.ones(D, dtype=float)
+
+    max_iter = 5000
+    tol = 1e-8  # convergence tolerance
+
+    col_norm2 = np.sum(X * X, axis=0)
+
+    for _ in range(max_iter):
+        w_old = w.copy()
+
+        r = y - X @ w
+
+        for d in range(D):
+            xd = X[:, d]
+
+            rho_d = xd @ (r + w[d] * xd)
+
+            if d == 0:
+                w_new = rho_d / col_norm2[d]
+            else:
+                thresh = lam / 2.0
+                if rho_d > thresh:
+                    w_new = (rho_d - thresh) / col_norm2[d]
+                elif rho_d < -thresh:
+                    w_new = (rho_d + thresh) / col_norm2[d]
+                else:
+                    w_new = 0.0
+
+            delta = w_new - w[d]
+            if delta != 0:
+                r -= delta * xd
+                w[d] = w_new
+
+        if np.max(np.abs(w - w_old)) < tol:
+            break
+
+    return w
+
+# Helper function for standardizing inputs to LASSO
+def preprocess_lasso(X):
+    X = make_basis(X, part='d')
+    X[:, 1:] = (X[:, 1:] - X[:, 1:].mean(axis = 0)) / X[:, 1:].std(axis = 0)
+    return X
+
+# Fit the weights for both models
+phi_x_train = preprocess_lasso(year_train)
+lam1, lam2 = 1, 10
+w1 = find_lasso_weights(lam1, phi_x_train, temp_train)
+w2 = find_lasso_weights(lam2, phi_x_train, temp_train)
+
+# Plot functions
+x_array = np.arange(400, 800 + 1, 1)
+phi_x_array = preprocess_lasso(x_array)
+
+yhat1 = phi_x_array @ w1
+yhat2 = phi_x_array @ w2
+plt.plot(x_array, yhat1, label=r"$\lambda=1$")
+plt.plot(x_array, yhat2, label=r"$\lambda=10$")
+
+plt.scatter(year_train, temp_train, label = "training data", color = "red")
+plt.legend()
+plt.xticks(np.arange(400, 800 + 100, 100))
+plt.ylabel("Temperature")
+plt.xlabel("Year BCE (in thousands)")
+
+plt.gca().invert_xaxis()
+# save figure to img_output directory
+plt.savefig("img_output/p4.5.png", bbox_inches = "tight")
+plt.show()
+
+# Compute the MSE for both values of lambda
+
+phi_x_test = preprocess_lasso(year_test)
+
+yhat_test_1 = phi_x_test @ w1
+yhat_test_2 = phi_x_test @ w2
+
+mse_lam1 = model_mse(yhat_test_1, temp_test)
+mse_lam2 = model_mse(yhat_test_2, temp_test)
+
+{"lambda=1": mse_lam1, "lambda=10": mse_lam2}
+\end{verbatim}
+\textbf{Output \& Plot:}
+\begin{verbatim}
+{'lambda=1': np.float64(30.06059712335642),
+ 'lambda=10': np.float64(15.618355294193629)}
+\end{verbatim}|
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\linewidth]{hw1/img_output/p4.5.png}
+\end{figure}
+\noindent
+Compared to the unregularized basis (d) model, the LASSO-regularized models produce significantly smoother predictions on the training set. When $\lambda = 1$, the model still exhibits noticeable oscillations, indicating that many basis coefficients remain active and the model continues to overfit. For $\lambda = 10$, the prediction curve is much smoother and better aligned with the overall trend of the data, reflecting stronger shrinkage and increased sparsity in the learned weights.
+\\\\
+This difference is also reflected in the test MSEs. The model with $\lambda = 1$ achieves a test MSE of approximately $30.06$, while increasing the regularization to $\lambda = 10$ reduces the test MSE to approximately $15.62$. The improvement shows that stronger $\ell_1$ regularization helps mitigate overfitting by suppressing irrelevant or noisy basis functions.
+\\\\
+In contrast, the unregularized basis (d) model severely overfits due to its high dimensionality, resulting in highly oscillatory predictions and poor generalization. Overall, LASSO regularization provides a better bias--variance trade-off, and a larger $\lambda$ leads to improved generalization in this setting.
+
 \end{solution}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -346,8 +831,13 @@ dictates how quickly the kernel decays).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 
-\textbf{Name}:
+\noindent
+\textbf{Name:} Johnny Zhao
 
-\textbf{Collaborators and Resources}: 
+\textbf{Collaborators and Resources:}
+\begin{itemize}
+    \item AI Assistance: ChatGPT 5.2 (used only for high-level conceptual clarification and review of mathematical ideas).
+    \item Course Materials: COMPSCI 1810 Machine Learning lecture notes and slides, BST 220 Applied Regression Analysis, BST 222 Statistical Inference, BST 221 Applied Data Structures and Algorithms.
+\end{itemize}
 
 \end{document}
